@@ -23,234 +23,276 @@ options(shiny.maxRequestSize = 30 * 1024^2)
 # -------------------------------------------------------------------
 # 1) DICTIONNAIRE STATISTIQUE (FR + AR, paragraphes)
 # -------------------------------------------------------------------
+# Fully expanded `stat_dict`:
+# - Definitions (FR/AR) are enriched
+# - Math fields are filled for EVERY key
+# - Structure stays identical so you can call stat_dict[[key]]$desc$fr/ar and $math in your app
+
 stat_dict <- list(
   "n" = list(
     desc = list(
-      fr = "Le nombre d’observations valides correspond au total de valeurs réellement utilisées dans les calculs (après exclusion des NA). Il influence la stabilité des estimations : plus n est grand, plus les statistiques (moyenne, quantiles, corrélations) sont généralement fiables. n ne mesure pas la “qualité” des données, seulement leur quantité disponible.",
-      ar = "يمثل عدد الملاحظات الصالحة إجمالي القيم المستخدمة فعليًا في الحسابات بعد استبعاد القيم المفقودة. كلما كبر n أصبحت الإحصاءات (المتوسط، الكوانتيلات، الارتباطات) أكثر استقرارًا وموثوقية. n لا يقيس جودة البيانات بل يوضح كمية القيم المتاحة."
+      fr = "Le nombre d’observations valides (n) correspond au total de valeurs effectivement utilisées dans les calculs, après exclusion des valeurs manquantes (NA) et, selon les règles de nettoyage, d’éventuelles valeurs non finies (Inf/NaN). C’est une information essentielle car elle conditionne la stabilité et la précision des estimations : en général, plus n est grand, plus la moyenne, les quantiles, l’écart-type, les corrélations et les tests sont stables et reproductibles. Attention : n ne mesure pas la “qualité” (biais, erreurs de mesure, bruit), mais seulement la quantité de données disponibles. Illustration : une moyenne calculée sur n=8 peut changer fortement si une seule valeur est atypique, alors qu’avec n=800 l’effet d’une valeur isolée est souvent dilué.",
+      ar = "يمثل عدد الملاحظات الصالحة (n) إجمالي القيم المستخدمة فعليًا في الحسابات بعد استبعاد القيم المفقودة (NA) وأحيانًا القيم غير المنتهية (Inf/NaN) حسب قواعد التنظيف. هذه قيمة محورية لأنها تؤثر على استقرار ودقة التقديرات: عادةً كلما زاد n أصبحت مقاييس مثل المتوسط والكوانتيلات والانحراف المعياري والارتباطات والاختبارات أكثر ثباتًا وقابلية للتكرار. تنبيه: n لا يقيس “جودة” البيانات (تحيز، أخطاء قياس، ضوضاء) بل يوضح كمية القيم المتاحة. مثال: متوسط محسوب على n=8 قد يتغير كثيرًا بسبب قيمة شاذة واحدة، بينما عند n=800 غالبًا يضعف تأثير القيمة المفردة."
     ),
-    math = ""
+    math = "\\[ n = \\sum_{i=1}^{N} \\mathbf{1}(x_i\\ \\text{valide}) \\]"
   ),
+  
   "n_na" = list(
     desc = list(
-      fr = "Le nombre de valeurs manquantes (NA) indique combien d’observations sont absentes. Si les NA ne sont pas aléatoires (par ex. plus fréquents dans un groupe), ils peuvent biaiser l’analyse. En descriptif, on ignore souvent les NA, mais il est important de surveiller n_na pour décider : suppression, imputation, ou analyse du mécanisme de manque.",
-      ar = "عدد القيم المفقودة (NA) يوضح كم ملاحظة غير متوفرة. إذا لم تكن القيم المفقودة عشوائية فقد تسبب تحيزًا (مثلًا: أكثر في مجموعة معينة). غالبًا تُتجاهل NA في الوصف، لكن متابعة n_na مهمة لاختيار استراتيجية: حذف، تعويض، أو دراسة سبب الفقد."
+      fr = "Le nombre de valeurs manquantes (n_na) indique combien d’observations sont absentes (NA). En descriptif, on calcule souvent les statistiques en ignorant les NA, mais n_na reste crucial pour juger la complétude et le risque de biais. Si les NA sont non aléatoires (plus fréquents dans un groupe, une période ou pour certaines valeurs), ils peuvent fausser la moyenne, les comparaisons et les modèles. En pratique, n_na aide à décider entre suppression, imputation, ou analyse du mécanisme de manque (MCAR/MAR/MNAR). Indice : comparer n_na entre groupes/temps permet de détecter une structure du manque.",
+      ar = "يشير عدد القيم المفقودة (n_na) إلى عدد الملاحظات غير المتوفرة (NA). في الوصف الإحصائي غالبًا تُحسب المقاييس بتجاهل NA، لكن n_na مهم لتقييم اكتمال البيانات وخطر التحيز. إذا كانت القيم المفقودة غير عشوائية (مثلاً أكثر في مجموعة أو فترة زمنية أو عند قيم معينة) فقد تُشوّه المتوسطات والمقارنات والنماذج. عمليًا يساعد n_na في اختيار الإستراتيجية: حذف، تعويض، أو دراسة آلية الفقد (MCAR/MAR/MNAR). مؤشر مفيد: مقارنة n_na عبر الفئات أو الزمن لاكتشاف نمط للفقد."
     ),
-    math = ""
+    math = "\\[ n_{NA} = \\sum_{i=1}^{N} \\mathbf{1}(x_i\\ \\text{manquant}) \\]"
   ),
+  
   "na_pct" = list(
     desc = list(
-      fr = "Le pourcentage de valeurs manquantes (NA%) met n_na en contexte par rapport à la taille totale. Il permet de comparer la complétude entre variables. Un NA% élevé peut réduire la puissance statistique et rendre certaines comparaisons moins fiables, surtout si les valeurs manquantes se concentrent dans certaines catégories.",
-      ar = "نسبة القيم المفقودة (NA%) تضع n_na في سياقه مقارنةً بالحجم الكلي، وتسمح بمقارنة اكتمال البيانات بين المتغيرات. ارتفاع NA% قد يقلل القوة الإحصائية ويضعف موثوقية المقارنات خاصةً إذا تركزت القيم المفقودة في فئات معينة."
+      fr = "Le pourcentage de valeurs manquantes (NA%) met n_na en contexte par rapport à la taille totale. Il permet de comparer rapidement la complétude entre variables ou entre groupes. Un NA% élevé réduit la puissance statistique (moins d’informations), augmente l’incertitude et peut rendre certaines comparaisons instables, surtout si les NA se concentrent dans des catégories spécifiques. Règle pratique : au-delà de quelques %, inspectez la structure du manque et envisagez imputation ou analyse de sensibilité. Exemple : 20 NA sur 100 (20%) est bien plus problématique que 20 NA sur 10 000 (0,2%).",
+      ar = "تضع نسبة القيم المفقودة (NA%) قيمة n_na في سياقها مقارنةً بالحجم الكلي، وتسهّل مقارنة اكتمال البيانات بين المتغيرات أو بين المجموعات. ارتفاع NA% يقلل القوة الإحصائية (معلومات أقل) ويزيد عدم اليقين وقد يجعل المقارنات غير مستقرة، خصوصًا إذا تركزت القيم المفقودة في فئات محددة. قاعدة عملية: إذا تجاوزت النسبة بضعة بالمئة افحص نمط الفقد وفكّر في التعويض أو تحليل الحساسية. مثال: 20 قيمة مفقودة من 100 (20%) أخطر بكثير من 20 من 10,000 (0.2%)."
     ),
-    math = ""
+    math = "\\[ NA\\% = \\frac{n_{NA}}{N}\\times 100 \\]"
   ),
+  
   "sum" = list(
     desc = list(
-      fr = "La somme est le total des valeurs valides. Elle est utile pour des variables additives (quantités, ventes, totaux) mais dépend fortement de n : si vous comparez des groupes de tailles différentes, la somme peut être trompeuse. On la complète souvent par la moyenne ou par des taux.",
-      ar = "المجموع هو إجمالي القيم الصالحة. يفيد في المتغيرات التجميعية (كميات، مبيعات، إجماليات) لكنه يعتمد بشدة على n: مقارنة مجموعات بأحجام مختلفة قد تكون مضللة. غالبًا يُكمّل بالمتوسط أو بالمعدلات."
+      fr = "La somme est le total des valeurs valides (hors NA). Elle est utile pour des variables additives (quantités, ventes, volumes) lorsqu’on cherche un cumul. Mais elle dépend fortement de n : comparer des sommes entre groupes de tailles différentes peut être trompeur. On la complète souvent par la moyenne, par une somme “par unité” ou par des taux. Si la distribution est très asymétrique, quelques grandes valeurs peuvent dominer la somme : les quantiles et la médiane aident alors à contextualiser.",
+      ar = "المجموع هو إجمالي القيم الصالحة (باستثناء NA). يفيد للمتغيرات التجميعية مثل الكميات والمبيعات والأحجام عندما نريد قيمة تراكمية. لكنه يعتمد بقوة على n: مقارنة مجموعات بأحجام مختلفة قد تكون مضللة. لذلك يُستحسن دعمه بالمتوسط أو المجموع لكل وحدة أو بالمعدلات. وإذا كان التوزيع منحرفًا جدًا فقد تهيمن قيم كبيرة قليلة على المجموع، وهنا تساعد الكوانتيلات والوسيط في إعطاء سياق."
     ),
-    math = ""
+    math = "\\[ \\text{Somme} = \\sum_{i=1}^{n} x_i \\]"
   ),
+  
   "mean" = list(
     desc = list(
-      fr = "La moyenne arithmétique résume les données par un centre (somme / n). Elle est informative pour des distributions symétriques, mais sensible aux valeurs extrêmes (outliers) qui peuvent la déplacer. Si la distribution est asymétrique, il est pertinent de regarder aussi la médiane et des mesures robustes (MAD/IQR), ainsi qu’un graphique.",
-      ar = "المتوسط الحسابي يلخص البيانات بقيمة مركزية (المجموع / n). يكون مفيدًا للتوزيعات المتماثلة لكنه حساس للقيم المتطرفة التي قد تغيّره. إذا كان التوزيع منحرفًا فمن الأفضل النظر أيضًا إلى الوسيط ومقاييس مقاومة (MAD/IQR) مع رسم بياني."
+      fr = "La moyenne arithmétique résume les données par une valeur centrale (somme / n). Elle est informative pour des distributions relativement symétriques, mais sensible aux valeurs extrêmes (outliers) qui peuvent la déplacer. Bonne pratique : l’interpréter avec la médiane, l’IQR (ou MAD) et un graphique (histogramme/boxplot). Exemple : pour des revenus, la moyenne peut être nettement au-dessus de la “valeur typique” (médiane) à cause de quelques très hauts revenus.",
+      ar = "المتوسط الحسابي يلخص البيانات بقيمة مركزية (المجموع / n). يكون مفيدًا للتوزيعات شبه المتماثلة لكنه حساس للقيم المتطرفة التي قد تغيّره. ممارسة جيدة: تفسيره مع الوسيط وIQR (أو MAD) ومع رسم بياني (مدرج/صندوقي). مثال: في الدخل قد يكون المتوسط أعلى بكثير من القيمة “النموذجية” (الوسيط) بسبب قلة من القيم العالية."
     ),
     math = "\\[ \\bar{x} = \\frac{1}{n} \\sum_{i=1}^{n} x_i \\]"
   ),
+  
   "mean_trim" = list(
     desc = list(
-      fr = "La moyenne tronquée (trim) calcule la moyenne après avoir retiré une proportion des plus petites et des plus grandes valeurs (ici 10% à chaque extrémité). Elle réduit l’influence des outliers tout en gardant une logique proche de la moyenne. C’est un bon compromis quand on veut une moyenne plus robuste sans passer au tout-médiane.",
-      ar = "المتوسط المُشذّب (Trimmed mean) يحسب المتوسط بعد حذف نسبة من أصغر وأكبر القيم (هنا 10% من كل طرف). يقلل تأثير القيم الشاذة مع الحفاظ على فكرة المتوسط. يعد حلًا وسطًا جيدًا عندما نريد متوسطًا أكثر مقاومة دون الاكتفاء بالوسيط."
+      fr = "La moyenne tronquée (trim) calcule la moyenne après avoir retiré une proportion des plus petites et des plus grandes valeurs (ex. 10% à chaque extrémité). Elle réduit l’influence des outliers tout en restant proche de l’idée de moyenne. C’est un compromis utile entre moyenne (sensible) et médiane (très robuste). Attention : le taux de troncature doit être documenté car il change le résultat.",
+      ar = "المتوسط المُشذّب (Trimmed mean) يحسب المتوسط بعد حذف نسبة من أصغر وأكبر القيم (مثلاً 10% من كل طرف). يقلل تأثير القيم الشاذة مع الحفاظ على فكرة المتوسط. يعد حلًا وسطًا بين المتوسط (حساس) والوسيط (مقاوم جدًا). تنبيه: يجب توثيق نسبة التشذيب لأنها تؤثر على النتيجة."
     ),
-    math = ""
+    math = "\\[ \\bar{x}_{\\text{trim}} = \\frac{1}{n-2k}\\sum_{i=k+1}^{n-k} x_{(i)},\\quad k=\\lfloor \\alpha n \\rfloor \\]"
   ),
+  
   "winsor_mean" = list(
     desc = list(
-      fr = "La moyenne winsorisée remplace (au lieu de supprimer) les valeurs extrêmes par des valeurs limites (ici aux quantiles 10% et 90%), puis calcule la moyenne. Elle stabilise la moyenne quand des extrêmes existent, tout en conservant n constant. Utile si vous ne voulez pas “perdre” d’observations.",
-      ar = "المتوسط الوينسوري (Winsorized mean) يستبدل القيم المتطرفة بقيم حدّية (هنا عند كوانتيل 10% و90%) ثم يحسب المتوسط. يثبت المتوسط عند وجود قيم شاذة مع الحفاظ على n ثابتًا. مفيد إذا كنت لا تريد حذف ملاحظات."
+      fr = "La moyenne winsorisée remplace (au lieu de supprimer) les valeurs extrêmes par des valeurs seuils (par ex. quantiles 10% et 90%), puis calcule la moyenne. Elle limite l’impact des extrêmes tout en conservant n constant (on ne perd pas d’observations). Utile si l’on veut stabiliser la moyenne sans حذف بيانات. À utiliser de manière cohérente (mêmes seuils) et de façon transparente.",
+      ar = "المتوسط الوينسوري (Winsorized mean) يستبدل القيم المتطرفة بقيم حدّية (مثل كوانتيل 10% و90%) ثم يحسب المتوسط. يحد من تأثير الأطراف مع الحفاظ على n ثابتًا (لا نحذف ملاحظات). مفيد لتثبيت المتوسط دون فقدان بيانات. يجب استخدام نفس الحدود عند المقارنة وبشفافية."
     ),
-    math = ""
+    math = "\\[ x_i^{\\text{win}}=\\min\\big(\\max(x_i,Q_{\\alpha}),Q_{1-\\alpha}\\big),\\quad \\bar{x}_{\\text{win}}=\\frac{1}{n}\\sum_{i=1}^{n} x_i^{\\text{win}} \\]"
   ),
+  
   "ci_mean" = list(
     desc = list(
-      fr = "L’intervalle de confiance (IC) à 95% de la moyenne fournit une plage plausible pour la moyenne vraie de la population, compte tenu de la variabilité et de n. Un IC étroit = estimation précise, un IC large = incertitude. Il est basé sur la loi de Student lorsque l’écart-type populationnel est inconnu. Pour des distributions très non normales et petits n, l’IC peut être moins fiable.",
-      ar = "فترة الثقة 95% للمتوسط تعطي نطاقًا معقولًا لمتوسط المجتمع الحقيقي اعتمادًا على التباين وحجم العينة. النطاق الضيق يعني دقة أعلى، والواسع يعني عدم يقين أكبر. تُحسب غالبًا بتوزيع ستودنت عند عدم معرفة انحراف المجتمع. مع توزيعات غير طبيعية جدًا وn صغير قد تقل الموثوقية."
+      fr = "L’intervalle de confiance (IC) à 95% de la moyenne fournit une plage plausible pour la moyenne vraie de la population, compte tenu de la variabilité et de n. IC étroit = estimation précise ; IC large = incertitude. Il utilise souvent la loi de Student lorsque l’écart-type de la population est inconnu. Interprétation correcte : si l’on répétait l’échantillonnage, ~95% des IC ainsi construits contiendraient la vraie moyenne. Prudence : petits n + forte non-normalité → envisager un bootstrap.",
+      ar = "فترة الثقة 95% للمتوسط تعطي نطاقًا معقولًا لمتوسط المجتمع الحقيقي اعتمادًا على التباين وحجم العينة n. نطاق ضيق يعني دقة أعلى والواسع يعني عدم يقين أكبر. غالبًا تُحسب بتوزيع ستودنت عندما لا نعرف انحراف المجتمع. التفسير الصحيح: لو كررنا أخذ عينات وبنينا فترات بنفس الطريقة فحوالي 95% منها ستحتوي المتوسط الحقيقي. تنبيه: مع n صغير وتوزيع غير طبيعي جدًا يمكن التفكير في bootstrap."
     ),
-    math = "\\[ IC_{95\\%} = \\left[ \\bar{x} - t_{0.975} \\frac{s}{\\sqrt{n}} \\, ; \\, \\bar{x} + t_{0.975} \\frac{s}{\\sqrt{n}} \\right] \\]"
+    math = "\\[ IC_{95\\%}=\\left[\\bar{x}-t_{0.975,\\,n-1}\\frac{s}{\\sqrt{n}}\\ ;\\ \\bar{x}+t_{0.975,\\,n-1}\\frac{s}{\\sqrt{n}}\\right] \\]"
   ),
+  
   "geom_mean" = list(
     desc = list(
-      fr = "La moyenne géométrique convient aux phénomènes multiplicatifs (croissance, rendements). Elle revient à moyenner les logarithmes puis revenir à l’échelle d’origine. Elle n’est définie que pour des valeurs strictement positives (pas de 0/valeurs négatives).",
-      ar = "المتوسط الهندسي مناسب للظواهر المضاعِفة (النمو، العوائد). يعادل متوسط اللوغاريتمات ثم العودة للمقياس الأصلي. لا يُعرّف إلا للقيم الموجبة فقط (لا أصفار ولا قيم سالبة)."
+      fr = "La moyenne géométrique convient aux phénomènes multiplicatifs (croissance, rendements). Elle correspond à un “facteur moyen” et revient à moyenner les logarithmes puis revenir à l’échelle d’origine. Elle n’est définie que pour des valeurs strictement positives (pas de 0 ni de négatifs). En présence de zéros, il faut adapter la stratégie (transformation, epsilon, autre indicateur) selon le contexte.",
+      ar = "المتوسط الهندسي مناسب للظواهر المضاعِفة مثل النمو والعوائد. يمثل “عاملًا متوسطًا” ويعادل متوسط اللوغاريتمات ثم العودة للمقياس الأصلي. لا يُعرّف إلا للقيم الموجبة تمامًا (لا أصفار ولا قيم سالبة). عند وجود أصفار يجب تعديل الأسلوب (تحويل، إضافة قيمة صغيرة، أو مقياس آخر) حسب السياق."
     ),
-    math = "\\[ \\left(\\prod_{i=1}^n x_i\\right)^{\\frac{1}{n}} \\]"
+    math = "\\[ \\text{GM}=\\left(\\prod_{i=1}^{n} x_i\\right)^{\\frac{1}{n}}=\\exp\\left(\\frac{1}{n}\\sum_{i=1}^{n}\\ln x_i\\right),\\quad x_i>0 \\]"
   ),
+  
   "harm_mean" = list(
     desc = list(
-      fr = "La moyenne harmonique est pertinente pour moyenner des taux/سرعات et des ratios. Elle donne plus de poids aux petites valeurs. Elle exige des valeurs positives et peut devenir instable si certaines valeurs sont proches de zéro.",
-      ar = "المتوسط التوافقي مناسب لمتوسط المعدلات/السرعات والنِّسَب ويعطي وزنًا أكبر للقيم الصغيرة. يتطلب قيماً موجبة وقد يصبح غير مستقر إذا اقتربت قيم من الصفر."
+      fr = "La moyenne harmonique est pertinente pour moyenner des taux, vitesses et ratios quand le dénominateur est “constant” (ex. distance fixe). Elle donne plus de poids aux petites valeurs, ce qui est souvent souhaitable pour des taux. Elle exige des valeurs positives et devient instable si certaines valeurs sont proches de zéro (car les inverses explosent).",
+      ar = "المتوسط التوافقي مناسب لمتوسط المعدلات والسرعات والنِّسَب عندما يكون المقام ثابتًا (مثل مسافة ثابتة). يعطي وزنًا أكبر للقيم الصغيرة وهو منطقي غالبًا في المعدلات. يتطلب قيماً موجبة وقد يصبح غير مستقر إذا اقتربت قيم من الصفر لأن المقلوب يكبر جدًا."
     ),
-    math = "\\[ \\frac{n}{\\sum_{i=1}^n \\frac{1}{x_i}} \\]"
+    math = "\\[ \\text{HM}=\\frac{n}{\\sum_{i=1}^{n}\\frac{1}{x_i}},\\quad x_i>0 \\]"
   ),
+  
   "median" = list(
     desc = list(
-      fr = "La médiane est la valeur centrale (50% en dessous / 50% au-dessus). Elle est robuste aux outliers et recommandée pour les distributions asymétriques. Elle se complète naturellement avec l’IQR pour décrire la dispersion des 50% centraux.",
-      ar = "الوسيط هو القيمة المركزية (50% أقل و50% أكبر). وهو مقاوم للقيم الشاذة ويُفضّل في التوزيعات المنحرفة. غالبًا يُكمّل بـ IQR لوصف تشتت 50% الوسطى."
+      fr = "La médiane est la valeur centrale : 50% des observations sont en dessous (ou égales) et 50% au-dessus (ou égales). Elle est robuste aux outliers et recommandée pour les distributions asymétriques. Elle se complète naturellement avec l’IQR pour décrire la dispersion des 50% centraux, et avec P10/P90 pour situer les queues.",
+      ar = "الوسيط هو القيمة المركزية: 50% من الملاحظات أقل منها أو تساويها و50% أكبر منها أو تساويها. وهو مقاوم للقيم الشاذة ويُفضّل في التوزيعات المنحرفة. يُكمّل عادةً بـ IQR لوصف تشتت 50% الوسطى وبـ P10/P90 لفهم الأطراف."
     ),
-    math = ""
-  ),
+    # math = "\\[ \\tilde{x}=\\begin{cases}x_{\\left(\\frac{n+1}{2}\\right)} & n\\ \\text{impair}\\\\ \\frac{x_{\\left(\\frac{n}{2}\\right)}+x_{\\left(\\frac{n}{2}+1\\right)}}{2} & n\\ \\text{pair}\\end{cases} \\]",
+    math = "\\[
+                                      \\tilde{x}=
+                                      \\begin{cases}
+                                      x_{\\left(\\frac{n+1}{2}\\right)} & n\\ \\text{impair}\\\\
+                                      \\left(x_{\\left(\\frac{n}{2}\\right)} + x_{\\left(\\frac{n}{2}+1\\right)}\\right)/2 & n\\ \\text{pair}
+                                      \\end{cases}
+                                  \\]"
+  
+    ),
+  
   "mode" = list(
     desc = list(
-      fr = "Le mode est la valeur la plus fréquente. Très utile pour des variables discrètes/catégorielles. Pour des variables continues avec beaucoup de valeurs uniques, le mode “exact” peut être peu informatif ; un mode par classes (histogramme) est alors plus pertinent.",
-      ar = "المنوال هو أكثر قيمة تكرارًا. مفيد جدًا للمتغيرات المنفصلة أو الفئوية. في المتغيرات المستمرة ذات القيم الفريدة الكثيرة قد لا يكون المنوال الدقيق ذا معنى؛ المنوال حسب الفئات عبر المدرج قد يكون أنسب."
+      fr = "Le mode est la valeur (ou catégorie) la plus fréquente. Très utile pour des variables discrètes/catégorielles. Pour des variables continues avec beaucoup de valeurs uniques, le mode “exact” peut être peu informatif : un mode par classes (histogramme/densité) est alors plus pertinent. Une distribution peut être multimodale (plusieurs modes), révélant des sous-groupes.",
+      ar = "المنوال هو أكثر قيمة (أو فئة) تكرارًا. مفيد جدًا للمتغيرات المنفصلة أو الفئوية. في المتغيرات المستمرة ذات القيم الفريدة الكثيرة قد لا يكون المنوال الدقيق ذا معنى؛ منوال حسب الفئات عبر المدرج/الكثافة يكون أنسب. وقد يكون التوزيع متعدد المنوال مما يشير إلى مجموعات فرعية."
     ),
-    math = ""
+    math = "\\[ \\text{Mode}=\\arg\\max_{v}\\ \\#\\{i: x_i=v\\} \\]"
   ),
+  
   "sd" = list(
     desc = list(
-      fr = "L’écart-type mesure la dispersion autour de la moyenne, dans نفس وحدة المتغير. Il est sensible aux extrêmes : quelques outliers peuvent l’augmenter. Pour des distributions très asymétriques, on peut préférer MAD/IQR pour une dispersion plus robuste.",
-      ar = "الانحراف المعياري يقيس التشتت حول المتوسط وبنفس وحدة المتغير. وهو حساس للقيم المتطرفة وقد يرتفع بسببها. في التوزيعات المنحرفة جدًا قد تكون MAD أو IQR أكثر مقاومة لوصف التشتت."
+      fr = "L’écart-type (sd) mesure la dispersion autour de la moyenne, dans la même unité que la variable. Il est sensible aux extrêmes : quelques outliers peuvent l’augmenter fortement. Pour des distributions très asymétriques, on peut préférer MAD/IQR pour une dispersion plus robuste. À lire avec un graphique (histogramme/boxplot).",
+      ar = "الانحراف المعياري (sd) يقيس التشتت حول المتوسط وبنفس وحدة المتغير. وهو حساس للقيم المتطرفة وقد يرتفع بسببها. في التوزيعات المنحرفة جدًا قد تكون MAD أو IQR أكثر مقاومة لوصف التشتت. يُفضّل تفسيره مع رسم بياني."
     ),
-    math = "\\[ s = \\sqrt{\\frac{1}{n-1} \\sum_{i=1}^{n} (x_i - \\bar{x})^2} \\]"
+    math = "\\[ s=\\sqrt{\\frac{1}{n-1}\\sum_{i=1}^{n}(x_i-\\bar{x})^2} \\]"
   ),
+  
   "var" = list(
     desc = list(
-      fr = "La variance est l’écart-type au carré. Elle est fondamentale dans beaucoup de formules (statistique inférentielle, modèles), mais moins intuitive car exprimée en unités carrées. On interprète souvent sd plutôt que var.",
-      ar = "التباين هو مربع الانحراف المعياري. مهم في كثير من الصيغ والنماذج لكنه أقل سهولة في التفسير لأنه بوحدات مربعة. غالبًا يُفسَّر sd بدلًا من var."
+      fr = "La variance (var) est l’écart-type au carré. Elle est centrale dans de nombreuses formules (inférence, modèles), mais moins intuitive car exprimée en unités carrées. En description, on interprète souvent sd plutôt que var, mais var est utile pour les décompositions et comparaisons analytiques.",
+      ar = "التباين (var) هو مربع الانحراف المعياري. مهم جدًا في كثير من الصيغ والنماذج لكنه أقل سهولة في التفسير لأنه بوحدات مربعة. غالبًا يُفسَّر sd بدلًا من var، لكن var مفيد في التفكيكات والمقارنات التحليلية."
     ),
-    math = "\\[ s^2 = \\frac{1}{n-1} \\sum_{i=1}^{n} (x_i - \\bar{x})^2 \\]"
+    math = "\\[ s^2=\\frac{1}{n-1}\\sum_{i=1}^{n}(x_i-\\bar{x})^2 \\]"
   ),
+  
   "se" = list(
     desc = list(
-      fr = "L’erreur standard (SE) quantifie l’incertitude sur la moyenne estimée : sd / √n. Elle diminue quand n augmente. Le SE décrit la précision de l’estimation, pas la dispersion des données (ça, c’est sd).",
-      ar = "الخطأ المعياري (SE) يقيس عدم اليقين حول متوسط العينة: ‏sd / √n. ينخفض مع زيادة n. ‏SE يصف دقة التقدير وليس تشتت البيانات (التشتت هو sd)."
+      fr = "L’erreur standard (SE) mesure l’incertitude sur la moyenne estimée : sd/√n. Elle diminue quand n augmente. Point clé : SE décrit la précision de l’estimation de la moyenne, pas la dispersion des données (c’est sd). On l’utilise pour construire des IC et faire des tests sur la moyenne.",
+      ar = "الخطأ المعياري (SE) يقيس عدم اليقين حول متوسط العينة: sd/√n. ينخفض مع زيادة n. نقطة أساسية: SE يصف دقة تقدير المتوسط وليس تشتت البيانات (التشتت هو sd). يُستخدم لبناء فترات الثقة واختبار الفرضيات حول المتوسط."
     ),
-    math = "\\[ SE = \\frac{s}{\\sqrt{n}} \\]"
+    math = "\\[ SE(\\bar{x})=\\frac{s}{\\sqrt{n}} \\]"
   ),
+  
   "cv" = list(
     desc = list(
-      fr = "Le coefficient de variation (CV%) est sd rapporté à la moyenne (×100). Il permet de comparer la variabilité entre variables d’échelles différentes. Si la moyenne est proche de 0, le CV peut devenir instable et perdre son sens.",
-      ar = "معامل التباين (CV%) هو sd مقسومًا على المتوسط (×100). يفيد لمقارنة التشتت بين متغيرات بمقاييس مختلفة. إذا كان المتوسط قريبًا من الصفر قد يصبح CV غير مستقر ويفقد معناه."
+      fr = "Le coefficient de variation (CV%) est sd rapporté à la moyenne (×100). Il compare une variabilité relative entre variables d’échelles différentes. Limite majeure : si la moyenne est proche de 0, le CV devient instable et perd son sens. Il est surtout adapté à des variables positives sur une échelle de ratio.",
+      ar = "معامل التباين (CV%) هو sd مقسومًا على المتوسط (×100) ويُستخدم لمقارنة التشتت النسبي بين متغيرات بمقاييس مختلفة. حد مهم: إذا كان المتوسط قريبًا من الصفر يصبح CV غير مستقر ويفقد معناه. يناسب عادةً المتغيرات الموجبة وعلى مقياس نسبي."
     ),
-    math = "\\[ CV = \\frac{s}{\\bar{x}} \\times 100 \\]"
+    math = "\\[ CV\\% = \\frac{s}{\\bar{x}}\\times 100 \\]"
   ),
+  
   "mad" = list(
     desc = list(
-      fr = "Le MAD (Median Absolute Deviation) mesure la dispersion autour de la médiane. Il est très robuste aux outliers et est souvent préférable à sd quand les données contiennent des valeurs extrêmes ou sont fortement asymétriques.",
-      ar = "‏MAD يقيس التشتت حول الوسيط وهو مقاوم جدًا للقيم الشاذة. غالبًا يكون أفضل من sd عند وجود قيم متطرفة أو توزيع منحرف بشدة."
+      fr = "Le MAD (Median Absolute Deviation) mesure la dispersion autour de la médiane : médiane(|x_i − médiane|). Il est très robuste aux outliers et souvent préférable à sd si les données sont asymétriques ou contiennent des extrêmes. Option : on peut le “mettre à l’échelle” (×1.4826) pour être comparable à sd sous normalité, selon les conventions.",
+      ar = "‏MAD (الانحراف المطلق الوسيط) يقيس التشتت حول الوسيط: وسيط(|x_i − الوسيط|). وهو مقاوم جدًا للقيم الشاذة وغالبًا أفضل من sd إذا كان التوزيع منحرفًا أو يحتوي على قيم متطرفة. خيار: يمكن ضربه بـ (×1.4826) ليقارب sd تحت افتراض الطبيعية حسب العُرف."
     ),
-    math = "\\[ MAD = \\text{médiane}(|x_i - \\tilde{x}|) \\]"
+    math = "\\[ MAD=\\operatorname{m\\acute{e}diane}\\big(|x_i-\\tilde{x}|\\big) \\quad (\\text{option: } MAD_{\\text{norm}}=1.4826\\,MAD) \\]"
   ),
+  
   "iqr" = list(
     desc = list(
-      fr = "L’IQR = Q3 − Q1 décrit la dispersion des 50% centraux et est robuste aux extrêmes. Il est utilisé dans les boxplots et dans la règle 1.5×IQR pour détecter les outliers.",
-      ar = "‏IQR = Q3 − Q1 يصف تشتت 50% الوسطى وهو مقاوم للقيم المتطرفة. يُستخدم في مخطط الصندوق وقاعدة ‎1.5×IQR‎ لاكتشاف القيم الشاذة."
+      fr = "L’IQR = Q3 − Q1 décrit la dispersion des 50% centraux et est robuste aux extrêmes. Il est utilisé dans les boxplots et la règle 1.5×IQR pour détecter les outliers. Un IQR petit indique une moitié centrale concentrée ; un IQR grand indique une variabilité typique élevée.",
+      ar = "‏IQR = Q3 − Q1 يصف تشتت 50% الوسطى وهو مقاوم للقيم المتطرفة. يُستخدم في مخطط الصندوق وقاعدة ‎1.5×IQR‎ لاكتشاف القيم الشاذة. IQR صغير يعني تركّز النصف الأوسط، وكبير يعني تباينًا اعتياديًا أكبر."
     ),
     math = "\\[ IQR = Q_3 - Q_1 \\]"
   ),
+  
   "p10" = list(
     desc = list(
-      fr = "Le décile 10% (P10) est la valeur en dessous de laquelle se trouvent 10% des observations. Il décrit le bas de la distribution de façon plus robuste que le minimum. Utile pour résumer la « queue basse » sans être dominé par un seul point extrême.",
-      ar = "العُشير 10% (P10) هو القيمة التي يقع تحتها 10% من الملاحظات. يصف الطرف الأدنى للتوزيع بشكل أكثر مقاومة من الحد الأدنى. مفيد لتلخيص الذيل السفلي دون أن تهيمن قيمة متطرفة واحدة."
+      fr = "Le décile 10% (P10) est la valeur en dessous de laquelle se trouvent 10% des observations. Il décrit le bas de la distribution de manière plus stable que le minimum (moins dépendant d’un seul point extrême). Utile pour résumer la queue basse et comparer des groupes sur les faibles niveaux.",
+      ar = "العُشير 10% (P10) هو القيمة التي يقع تحتها 10% من الملاحظات. يصف الطرف الأدنى بشكل أكثر ثباتًا من الحد الأدنى لأنه أقل اعتمادًا على قيمة متطرفة واحدة. مفيد لتلخيص الذيل السفلي ولمقارنة المجموعات عند المستويات المنخفضة."
     ),
-    math = ""
+    math = "\\[ P10 = Q_{0.10} \\]"
   ),
+  
   "p90" = list(
     desc = list(
-      fr = "Le décile 90% (P90) est la valeur en dessous de laquelle se trouvent 90% des observations (donc 10% au-dessus). Il décrit le haut de la distribution de manière robuste. Utile pour comprendre les niveaux élevés sans dépendre uniquement du maximum.",
-      ar = "العُشير 90% (P90) هو القيمة التي يقع تحتها 90% من الملاحظات (أي 10% أعلى منها). يصف الطرف الأعلى للتوزيع بشكل مقاوم. مفيد لفهم المستويات العالية دون الاعتماد فقط على القيمة العظمى."
+      fr = "Le décile 90% (P90) est la valeur en dessous de laquelle se trouvent 90% des observations (donc 10% au-dessus). Il décrit le haut de la distribution de manière robuste et complète utilement max. Il aide à comprendre les niveaux élevés sans dépendre d’un extrême unique.",
+      ar = "العُشير 90% (P90) هو القيمة التي يقع تحتها 90% من الملاحظات (أي 10% أعلى منها). يصف الطرف الأعلى بشكل مقاوم ويُكمّل max. يساعد على فهم المستويات العالية دون الاعتماد على قيمة متطرفة واحدة."
     ),
-    math = ""
+    math = "\\[ P90 = Q_{0.90} \\]"
   ),
+  
   "min" = list(
     desc = list(
-      fr = "La valeur minimale est la plus petite observation (hors NA). Elle peut être affectée par une valeur aberrante, لذا تُقرأ avec P10/Q1 pour une image plus stable.",
-      ar = "القيمة الصغرى هي أصغر ملاحظة (باستثناء NA). قد تتأثر بقيمة شاذة، لذا يُفضل قراءتها مع P10 وQ1 للحصول على صورة أكثر ثباتًا."
+      fr = "La valeur minimale (min) est la plus petite observation valide (hors NA). Elle peut être affectée par une valeur aberrante ; on la lit donc avec P10/Q1 pour une image plus stable. Dans certains contextes, min peut refléter un plancher réel (zéro technique/limite).",
+      ar = "القيمة الصغرى (min) هي أصغر ملاحظة صالحة (باستثناء NA). قد تتأثر بقيمة شاذة لذا تُقرأ مع P10 وQ1 للحصول على صورة أكثر ثباتًا. وفي بعض السياقات قد تعكس حدًا أدنى حقيقيًا."
     ),
-    math = ""
+    math = "\\[ x_{\\min} = \\min_{1\\le i\\le n} x_i \\]"
   ),
+  
   "q1" = list(
     desc = list(
-      fr = "Q1 (25%) : 25% des valeurs sont ≤ Q1. Il résume le bas de la distribution de façon robuste et sert à calculer l’IQR.",
-      ar = "‏Q1 (25%) : ‏25% من القيم ≤ Q1. يصف الجزء الأدنى بشكل مقاوم ويستخدم لحساب IQR."
+      fr = "Q1 (25%) : 25% des valeurs sont ≤ Q1. Il résume le bas de la distribution de façon robuste et sert à calculer l’IQR (Q3 − Q1). Utile pour comparer les “faibles niveaux typiques” entre groupes.",
+      ar = "‏Q1 (25%) : ‏25% من القيم ≤ Q1. يصف الجزء الأدنى بشكل مقاوم ويستخدم لحساب IQR (Q3 − Q1). مفيد لمقارنة المستويات المنخفضة الاعتيادية بين المجموعات."
     ),
-    math = ""
+    math = "\\[ Q_1 = Q_{0.25} \\]"
   ),
+  
   "q3" = list(
     desc = list(
-      fr = "Q3 (75%) : 75% des valeurs sont ≤ Q3. Avec Q1, il définit l’IQR et participe à la détection d’outliers.",
-      ar = "‏Q3 (75%) : ‏75% من القيم ≤ Q3. مع Q1 يحدد IQR ويساعد في اكتشاف القيم الشاذة."
+      fr = "Q3 (75%) : 75% des valeurs sont ≤ Q3. Avec Q1, il définit l’IQR et participe à la détection d’outliers (seuil supérieur Q3 + 1.5×IQR). Q3 décrit le haut “typique” de la distribution, plus robuste que max.",
+      ar = "‏Q3 (75%) : ‏75% من القيم ≤ Q3. مع Q1 يحدد IQR ويساعد في اكتشاف القيم الشاذة (Q3 + 1.5×IQR). يصف Q3 الجزء الأعلى “الاعتيادي” وهو أكثر مقاومة من max."
     ),
-    math = ""
+    math = "\\[ Q_3 = Q_{0.75} \\]"
   ),
+  
   "max" = list(
     desc = list(
-      fr = "La valeur maximale est la plus grande observation (hors NA). Elle peut être dominée par un outlier ; comparez-la à P90/Q3 pour juger si elle est atypique.",
-      ar = "القيمة العظمى هي أكبر ملاحظة (باستثناء NA). قد تهيمن عليها قيمة شاذة؛ قارنها بـ P90 وQ3 لتقييم مدى شذوذها."
+      fr = "La valeur maximale (max) est la plus grande observation valide (hors NA). Elle peut être dominée par un outlier ; comparez-la à P90/Q3 (ou au seuil Q3 + 1.5×IQR) pour juger si elle est atypique. Un max extrême peut être réel (pic) ou une erreur : à vérifier.",
+      ar = "القيمة العظمى (max) هي أكبر ملاحظة صالحة (باستثناء NA). قد تهيمن عليها قيمة شاذة؛ قارنها بـ P90 وQ3 (أو حد Q3 + 1.5×IQR) لتقييم شذوذها. قد تكون ذروة حقيقية أو خطأ لذا يجب التحقق."
     ),
-    math = ""
+    math = "\\[ x_{\\max} = \\max_{1\\le i\\le n} x_i \\]"
   ),
+  
   "range" = list(
     desc = list(
-      fr = "L’étendue (max − min) résume la dispersion totale mais dépend uniquement des deux extrêmes, donc elle est très sensible aux outliers. À compléter par sd/IQR pour une vision plus robuste.",
-      ar = "المدى (max − min) يلخص التشتت الكلي لكنه يعتمد فقط على الطرفين، لذا فهو حساس جدًا للقيم الشاذة. يُفضل دعمه بـ sd أو IQR لوصف أكثر مقاومة."
+      fr = "L’étendue (range = max − min) résume la dispersion totale mais dépend uniquement des deux extrêmes, donc elle est très sensible aux outliers. À compléter par sd/IQR (ou MAD) pour une vision plus robuste. Utile quand les extrêmes ont un sens métier, à condition de vérifier leur plausibilité.",
+      ar = "المدى (range = max − min) يلخص التشتت الكلي لكنه يعتمد فقط على الطرفين لذا فهو حساس جدًا للقيم الشاذة. يُفضّل دعمه بـ sd أو IQR (أو MAD) لوصف أكثر مقاومة. يفيد عندما تكون الأطراف ذات معنى عملي مع التحقق من معقوليتها."
     ),
     math = "\\[ R = x_{\\max} - x_{\\min} \\]"
   ),
+  
   "skew" = list(
     desc = list(
-      fr = "La skewness mesure l’asymétrie : مثبتة à droite (positive) ou à gauche (négative). Une skewness proche de 0 suggère une distribution assez symétrique. Elle aide à choisir des transformations (log) ou des mesures robustes.",
-      ar = "الالتواء (Skewness) يقيس عدم التماثل: موجب عند ذيل يميني أطول وسالب عند ذيل يساري أطول. قربه من الصفر يعني تماثلًا نسبيًا. يساعد على اختيار التحويلات (لوغاريتم) أو المقاييس المقاومة."
+      fr = "La skewness mesure l’asymétrie : positive si la queue est plus longue à droite (quelques grandes valeurs), négative si elle est plus longue à gauche. Une skewness proche de 0 suggère une distribution plutôt symétrique (sans le garantir). Elle aide à décider de transformations (log/racine) et du choix de mesures robustes. Elle est sensible aux outliers : à lire avec un histogramme/QQ-plot.",
+      ar = "الالتواء (Skewness) يقيس عدم التماثل: موجب عند ذيل يميني أطول وسالب عند ذيل يساري أطول. قربه من الصفر يعني تماثلًا نسبيًا (ليس ضمانًا). يساعد على اختيار التحويلات (لوغاريتم/جذر) أو المقاييس المقاومة. وهو حساس للقيم الشاذة لذا يُفسَّر مع رسم (مدرج/QQ)."
     ),
-    math = "\\[ \\gamma_1 = \\frac{\\sum (x_i - \\bar{x})^3}{(n-1)s^3} \\]"
+    math = "\\[ \\gamma_1 = \\frac{\\frac{1}{n}\\sum_{i=1}^{n}(x_i-\\bar{x})^3}{\\left(\\frac{1}{n}\\sum_{i=1}^{n}(x_i-\\bar{x})^2\\right)^{3/2}} \\]"
   ),
+  
   "kurt" = list(
     desc = list(
-      fr = "La kurtosis décrit la forme des queues et le pic. Des valeurs élevées suggèrent des queues plus lourdes (plus d’extrêmes). L’interprétation dépend de la convention (kurtosis vs excès). Ici, elle est surtout un indicateur d’extrêmes potentiels.",
-      ar = "التفرطح (Kurtosis) يصف شكل الذيول وحدّة القمة. القيم الأعلى قد تعني ذيولًا أثقل (قيم متطرفة أكثر). يعتمد التفسير على التعريف المستخدم. هنا نستخدمه كمؤشر لاحتمال وجود قيم متطرفة."
+      fr = "La kurtosis décrit la forme des queues et du pic. Des valeurs élevées suggèrent des queues plus lourdes (plus d’extrêmes). L’interprétation dépend de la convention : kurtosis (normale ≈ 3) ou excès (normale ≈ 0). Ici, elle sert surtout d’indicateur d’extrêmes potentiels et de non-normalité. Sensible aux outliers : à compléter par quantiles et QQ-plot.",
+      ar = "التفرطح (Kurtosis) يصف شكل الذيول وحدّة القمة. القيم الأعلى قد تعني ذيولًا أثقل (قيم متطرفة أكثر). يعتمد التفسير على التعريف: kurtosis (الطبيعي ≈ 3) أو excess (الطبيعي ≈ 0). هنا نستخدمه كمؤشر لاحتمال وجود قيم متطرفة وعدم طبيعية. وهو حساس للقيم الشاذة لذا يُفضّل دعمه بالكوانتيلات وQQ-plot."
     ),
-    math = "\\[ K = \\frac{\\sum (x_i - \\bar{x})^4}{(n-1)s^4} \\]"
+    math = "\\[ \\gamma_2 = \\frac{\\frac{1}{n}\\sum_{i=1}^{n}(x_i-\\bar{x})^4}{\\left(\\frac{1}{n}\\sum_{i=1}^{n}(x_i-\\bar{x})^2\\right)^2},\\quad \\text{Exc\\`es}=\\gamma_2-3 \\]"
   ),
+  
   "shapiro" = list(
     desc = list(
-      fr = "Le test de Shapiro-Wilk évalue la normalité. Si p < 0.05, on rejette souvent la normalité. Attention : avec un grand n, de petites déviations deviennent significatives. Combinez toujours avec un graphique (densité/QQ-plot si vous en ajoutez). (Limité à n ≤ 5000 dans cette app.)",
-      ar = "اختبار شابيرو-ويلك يختبر طبيعية التوزيع. إذا p < 0.05 نرفض غالبًا الطبيعية. تنبيه: مع n كبير قد تصبح انحرافات صغيرة ذات دلالة. يُفضل دائمًا دعمه برسم (كثافة/QQ إذا أضفته). (في هذا التطبيق: حتى n ≤ 5000)."
+      fr = "Le test de Shapiro–Wilk évalue la normalité. Si p < 0.05, on rejette souvent la normalité. Attention : avec un grand n, de petites déviations deviennent significatives ; avec un petit n, le test peut manquer de puissance. Combinez toujours avec un graphique (densité/histogramme, QQ-plot) et avec skewness/kurtosis. (Souvent limité à n ≤ 5000 selon les implémentations.)",
+      ar = "اختبار شابيرو–ويلك يختبر طبيعية التوزيع. إذا p < 0.05 نرفض غالبًا الطبيعية. تنبيه: مع n كبير قد تصبح انحرافات صغيرة ذات دلالة، ومع n صغير قد يكون الاختبار ضعيف القوة. يُفضّل دائمًا دعمه برسم (مدرج/كثافة وQQ-plot) ومع الالتواء والتفرطح. (غالبًا محدود بـ n ≤ 5000 حسب التطبيق.)"
     ),
-    math = "\\[ W = \\frac{\\left(\\sum a_i x_{(i)}\\right)^2}{\\sum(x_i - \\bar{x})^2} \\]"
+    math = "\\[ W = \\frac{\\left(\\sum_{i=1}^{n} a_i\\,x_{(i)}\\right)^2}{\\sum_{i=1}^{n}(x_i-\\bar{x})^2} \\]"
   ),
+  
   "jb" = list(
     desc = list(
-      fr = "Le test de Jarque–Bera (p-value) évalue la normalité via la skewness et la kurtosis : une distribution normale a une asymétrie ~0 et une kurtosis ~3. Si p < 0.05, la normalité est souvent rejetée. Comme les autres tests, il est sensible à n : avec de grands échantillons, il détecte de petites déviations. Dans cette app, JB est calculé sans package externe (approximation chi-deux, ddl=2).",
-      ar = "اختبار جاركي–بيرا (قيمة p) يختبر الطبيعية اعتمادًا على الالتواء والتفرطح: التوزيع الطبيعي له التواء ~0 وتفرطح ~3. إذا p < 0.05 غالبًا نرفض الطبيعية. مثل بقية الاختبارات هو حساس لحجم العينة: مع n كبير يلتقط انحرافات صغيرة. هنا يُحسب JB دون حزم إضافية (تقريب كاي-تربيع بدرجتي حرية)."
+      fr = "Le test de Jarque–Bera (p-value) évalue la normalité via la skewness et la kurtosis : une normale a asymétrie ≈ 0 et kurtosis ≈ 3 (selon la convention). Si p < 0.05, la normalité est souvent rejetée. Comme les autres tests, il est sensible à n : avec de grands échantillons, il détecte de petites déviations. Dans cette app, JB peut être calculé via une approximation chi-deux (ddl=2) sans package externe.",
+      ar = "اختبار جاركي–بيرا (قيمة p) يختبر الطبيعية اعتمادًا على الالتواء والتفرطح: التوزيع الطبيعي له التواء ≈ 0 وتفرطح ≈ 3 (حسب التعريف). إذا p < 0.05 غالبًا نرفض الطبيعية. مثل بقية الاختبارات هو حساس لحجم العينة: مع n كبير يلتقط انحرافات صغيرة. في هذا التطبيق يمكن حساب JB بتقريب كاي-تربيع بدرجتي حرية دون حزم إضافية."
     ),
-    math = ""
+    math = "\\[ JB = \\frac{n}{6}\\left(S^2 + \\frac{(K-3)^2}{4}\\right),\\quad JB\\ \\overset{H_0}{\\approx}\\ \\chi^2(2) \\]"
   ),
+  
   "outliers" = list(
     desc = list(
-      fr = "Détection d’outliers via la règle 1.5×IQR : une valeur est atypique si x < Q1 − 1.5×IQR ou x > Q3 + 1.5×IQR. Cette règle est robuste et correspond au boxplot. Un outlier n’est pas forcément une erreur : il peut refléter un phénomène réel mais doit être vérifié car il peut influencer moyenne/sd et certains modèles.",
-      ar = "اكتشاف القيم الشاذة بقاعدة ‎1.5×IQR‎: تعتبر القيمة شاذة إذا x < Q1 − 1.5×IQR أو x > Q3 + 1.5×IQR. هذه القاعدة مقاومة وتوافق مخطط الصندوق. القيمة الشاذة ليست دائمًا خطأً لكنها تستحق التحقق لأنها قد تؤثر على المتوسط/الانحراف وبعض النماذج."
+      fr = "Détection d’outliers via la règle 1.5×IQR : une valeur est atypique si x < Q1 − 1.5×IQR ou x > Q3 + 1.5×IQR. Cette règle est robuste et correspond au boxplot. Un outlier n’est pas forcément une erreur : il peut refléter un phénomène réel mais doit être vérifié car il peut influencer moyenne/sd et certains modèles. Bon protocole : vérifier la plausibilité, puis analyser la sensibilité (avec/sans outliers) et envisager des méthodes robustes si besoin.",
+      ar = "اكتشاف القيم الشاذة بقاعدة ‎1.5×IQR‎: تعتبر القيمة شاذة إذا x < Q1 − 1.5×IQR أو x > Q3 + 1.5×IQR. هذه القاعدة مقاومة وتوافق مخطط الصندوق. القيمة الشاذة ليست دائمًا خطأً لكنها تستحق التحقق لأنها قد تؤثر على المتوسط/الانحراف وبعض النماذج. بروتوكول جيد: تحقق من المعقولية ثم حلّل الحساسية (مع/بدون القيم الشاذة) واستخدم طرقًا مقاومة عند الحاجة."
     ),
-    math = "\\[ \\text{Outlier si } x < Q_1 - 1.5 \\times IQR \\text{ ou } x > Q_3 + 1.5 \\times IQR \\]"
+    math = "\\[ \\text{Outlier si } x < Q_1 - 1.5\\,IQR\\ \\text{ ou }\\ x > Q_3 + 1.5\\,IQR,\\quad IQR=Q_3-Q_1 \\]"
   )
 )
 
 # --- NEW: dictionnaire additions (do NOT remove existing) ---
 stat_dict$ad <- list(
   desc = list(
-    fr = "Le test d’Anderson–Darling (AD) est un test de normalité (p-value). Il donne généralement plus de poids aux queues (extrémités) que d’autres tests. Si p < 0.05, on rejette souvent la normalité. Comme tout test, avec grand n il détecte de petites déviations : à interpréter avec un QQ-plot.",
-    ar = "اختبار أندرسون–دارلينغ (AD) هو اختبار للطبيعية (قيمة p)، ويعطي وزنًا أكبر للذيول مقارنةً ببعض الاختبارات الأخرى. إذا كانت p < 0.05 فغالبًا نرفض الطبيعية. ومع n كبير قد يكتشف انحرافات صغيرة؛ يُفضل تفسيره مع QQ-plot."
+    fr = "Le test d’Anderson–Darling (AD) est un test de normalité (p-value) qui donne généralement plus de poids aux queues (extrémités) que d’autres tests. Il est donc souvent plus sensible aux écarts dans les valeurs extrêmes. Si p < 0.05, on rejette souvent la normalité. Comme tout test, avec grand n il détecte de petites déviations : à interpréter avec un QQ-plot et l’objectif (diagnostic vs hypothèse stricte).",
+    ar = "اختبار أندرسون–دارلينغ (AD) هو اختبار للطبيعية (قيمة p) ويعطي وزنًا أكبر للذيول مقارنةً ببعض الاختبارات الأخرى، لذلك يكون حساسًا لانحرافات الأطراف. إذا كانت p < 0.05 فغالبًا نرفض الطبيعية. ومع n كبير قد يكتشف انحرافات صغيرة؛ يُفضّل تفسيره مع QQ-plot ومع هدف التحليل."
   ),
-  math = ""
+  math = "\\[ A^2 = -n - \\frac{1}{n}\\sum_{i=1}^{n}(2i-1)\\Big[\\ln F(x_{(i)}) + \\ln\\big(1-F(x_{(n+1-i)})\\big)\\Big] \\]"
 )
 
 stat_dict$qq <- list(
   desc = list(
-    fr = "Le QQ-plot compare les quantiles observés aux quantiles théoriques d’une loi normale. Si les points suivent la droite, la normalité est plausible. Des courbures/écarts révèlent asymétrie, queues lourdes ou outliers.",
-    ar = "مخطط QQ يقارن الكوانتيلات المرصودة بالكوانتيلات النظرية للتوزيع الطبيعي. إذا اتبعت النقاط خطًا مستقيمًا فهذا يدعم الطبيعية. الانحرافات/التقوس قد تشير إلى عدم تماثل أو ذيول ثقيلة أو قيم شاذة."
+    fr = "Le QQ-plot compare les quantiles observés aux quantiles théoriques d’une loi normale. Si les points suivent une droite, la normalité est plausible. Les formes d’écart sont informatives : courbure en S (queues lourdes/légères), écart systématique (asymétrie), points très éloignés en bout (outliers). Le QQ-plot est souvent plus utile que les tests seuls, surtout quand n est grand (tests trop sensibles).",
+    ar = "مخطط QQ يقارن الكوانتيلات المرصودة بالكوانتيلات النظرية للتوزيع الطبيعي. إذا اتبعت النقاط خطًا مستقيمًا فهذا يدعم الطبيعية. أنماط الانحراف مفيدة: تقوس على شكل S (ذيول أثقل/أخف)، انحراف منهجي (عدم تماثل)، نقاط بعيدة جدًا عند الأطراف (قيم شاذة). غالبًا يكون QQ-plot أكثر فائدة من الاختبارات وحدها خاصةً عندما يكون n كبيرًا."
   ),
-  math = ""
+  math = "\\[ (q_i^{\\text{th}},q_i^{\\text{obs}}),\\ q_i^{\\text{obs}}=x_{(i)},\\ q_i^{\\text{th}}=\\Phi^{-1}(p_i),\\ p_i\\approx\\frac{i-0.5}{n} \\]"
 )
 
 # -------------------------------------------------------------------
